@@ -45,7 +45,7 @@ class Tooltip:
 
 def browse_file():
     global FILE_PATH
-    FILE_PATH = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx;*.xls")])
+    FILE_PATH = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx;*.xls"),("All Files","*.*")])
     update_file_status()
 
 def clear_log_text():
