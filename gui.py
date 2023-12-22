@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 from excel_modify import process_excel  
+import random
+import tkinter.messagebox as messagebox
 
 CORRECT = 'leave as is'
 INCORRECT = ''
@@ -61,6 +63,11 @@ def process_data():
     else:
         log_text.insert(tk.END, "Please select a file first.\n")
 
+def display_popup():
+    random_number = random.randint(1, 10)  
+    if random_number == 1:  
+        messagebox.showinfo("IMPORTANT", "Danielka is awesome <3!")
+
 def update_values(event):
     global CORRECT, INCORRECT, ACCESS_FORBIDDEN, CHECK_PDF
     CORRECT = correct_entry.get()
@@ -83,7 +90,7 @@ def update_file_status():
 
 root = tk.Tk()
 root.title("Excel URL checker")
-root.geometry("600x400")
+root.geometry("500x400")
 
 file_status_label = tk.Label(root, text="No file selected", fg="red")
 file_status_label.pack(padx=20, pady=10)
@@ -138,5 +145,6 @@ tooltips = {
 for widget, tooltip_text in tooltips.items():
     Tooltip(widget, tooltip_text)
 
+display_popup()
 
 root.mainloop()
