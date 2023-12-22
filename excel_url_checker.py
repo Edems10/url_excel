@@ -86,65 +86,75 @@ def update_file_status():
     else:
         file_status_label.config(text="No file selected", fg="red")  # Red color
 
+def main():
+    global file_status_label
+    global incorrect_entry
+    global correct_entry
+    global forbidden_entry
+    global pdf_check_var
+    global log_text
+    
+    root = tk.Tk()
+    root.title("Excel URL checker")
+    root.geometry("500x400")
+
+    file_status_label = tk.Label(root, text="No file selected", fg="red")
+    file_status_label.pack(padx=20, pady=10)
+
+    button_frame = tk.Frame(root, pady=20)
+    button_frame.pack()
+
+    browse_button = tk.Button(button_frame, text="Select File", command=browse_file)
+    browse_button.pack(side=tk.LEFT, padx=10)
+
+    process_button = tk.Button(button_frame, text="Check URLs", command=process_data)
+    process_button.pack(side=tk.LEFT, padx=10)
+
+    settings_frame = tk.Frame(root, padx=20, pady=10)
+    settings_frame.pack()
+
+    tk.Label(settings_frame, text="Correct:").grid(row=0, column=0)
+    correct_entry = tk.Entry(settings_frame)
+    correct_entry.grid(row=0, column=1)
+    correct_entry.insert(0, 'leave as is')
+
+    tk.Label(settings_frame, text="Incorrect:").grid(row=1, column=0)
+    incorrect_entry = tk.Entry(settings_frame)
+    incorrect_entry.grid(row=1, column=1)
+    incorrect_entry.insert(0, '')
+
+    tk.Label(settings_frame, text="Forbidden:").grid(row=3, column=0)
+    forbidden_entry = tk.Entry(settings_frame)
+    forbidden_entry.grid(row=3, column=1)
+    forbidden_entry.insert(0, 'access forbidden')
+
+    pdf_check_var = tk.BooleanVar()
+    pdf_check_var.set(True)
+    pdf_check = tk.Checkbutton(settings_frame, text="Check PDF Files", variable=pdf_check_var)
+    pdf_check.grid(row=4, columnspan=2)
 
 
-root = tk.Tk()
-root.title("Excel URL checker")
-root.geometry("500x400")
+    log_text = tk.Text(root, height=10, width=60, wrap=tk.WORD)
+    log_text.pack(padx=20, pady=(0, 20))
 
-file_status_label = tk.Label(root, text="No file selected", fg="red")
-file_status_label.pack(padx=20, pady=10)
+    correct_entry.bind("<KeyRelease>", update_values)
+    incorrect_entry.bind("<KeyRelease>", update_values)
+    forbidden_entry.bind("<KeyRelease>", update_values)
 
-button_frame = tk.Frame(root, pady=20)
-button_frame.pack()
+    # Tooltip messages for settings
+    tooltips = {
+        correct_entry: "This will be written if the URL is working correctly",
+        incorrect_entry: "This will be written if the URL is not working correctly",
+        forbidden_entry: "This will be written if the URL is not accesible due to an authentication issue",
+    }
 
-browse_button = tk.Button(button_frame, text="Select File", command=browse_file)
-browse_button.pack(side=tk.LEFT, padx=10)
+    for widget, tooltip_text in tooltips.items():
+        Tooltip(widget, tooltip_text)
 
-process_button = tk.Button(button_frame, text="Check URLs", command=process_data)
-process_button.pack(side=tk.LEFT, padx=10)
+    display_popup()
 
-settings_frame = tk.Frame(root, padx=20, pady=10)
-settings_frame.pack()
+    root.mainloop()
 
-tk.Label(settings_frame, text="Correct:").grid(row=0, column=0)
-correct_entry = tk.Entry(settings_frame)
-correct_entry.grid(row=0, column=1)
-correct_entry.insert(0, 'leave as is')
+if __name__ == '__main__':
+    main()
 
-tk.Label(settings_frame, text="Incorrect:").grid(row=1, column=0)
-incorrect_entry = tk.Entry(settings_frame)
-incorrect_entry.grid(row=1, column=1)
-incorrect_entry.insert(0, '')
-
-tk.Label(settings_frame, text="Forbidden:").grid(row=3, column=0)
-forbidden_entry = tk.Entry(settings_frame)
-forbidden_entry.grid(row=3, column=1)
-forbidden_entry.insert(0, 'access forbidden')
-
-pdf_check_var = tk.BooleanVar()
-pdf_check_var.set(True)
-pdf_check = tk.Checkbutton(settings_frame, text="Check PDF Files", variable=pdf_check_var)
-pdf_check.grid(row=4, columnspan=2)
-
-
-log_text = tk.Text(root, height=10, width=60, wrap=tk.WORD)
-log_text.pack(padx=20, pady=(0, 20))
-
-correct_entry.bind("<KeyRelease>", update_values)
-incorrect_entry.bind("<KeyRelease>", update_values)
-forbidden_entry.bind("<KeyRelease>", update_values)
-
-# Tooltip messages for settings
-tooltips = {
-    correct_entry: "This will be written if the URL is working correctly",
-    incorrect_entry: "This will be written if the URL is not working correctly",
-    forbidden_entry: "This will be written if the URL is not accesible due to an authentication issue",
-}
-
-for widget, tooltip_text in tooltips.items():
-    Tooltip(widget, tooltip_text)
-
-display_popup()
-
-root.mainloop()
