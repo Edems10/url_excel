@@ -12,9 +12,6 @@ LOCALIZATION = 'remove en-us'
 ACCESS_FORBIDDEN = 'access fodbidden'
 COMMENTS = 'DUB comment'
 URL = 'link'
-SLIDE = 'slide'
-FILE_PATH = ""
-CHECK_PDF = True
 
 LOCALIZATION_TYPES = ['en-us','en-gb','en-in','en-ca','en-au']
 
@@ -113,6 +110,12 @@ def process_url(curr_row, address, data):
 
 
 def process_excel(file_path,cor,incor,forbiden,pdf):
+    
+    global CHECK_PDF
+    global CORRECT
+    global INCORRECT
+    global ACCESS_FORBIDDEN
+    
     FILE_PATH = file_path
     CORRECT =cor
     INCORRECT = incor
