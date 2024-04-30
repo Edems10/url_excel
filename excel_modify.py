@@ -18,7 +18,7 @@ LOCALIZATION_TYPES = ['en-us','en-gb','en-in','en-ca','en-au']
 
 def check_pdf_url(url):
     try:
-        response = requests.get(url)
+        response = requests.get(url,timeout=10)
         if response.status_code == 200 and 'application/pdf' in response.headers.get('content-type', ''):
             pdf_content = BytesIO(response.content)
             pdf_reader = PyPDF2.PdfReader(pdf_content)
@@ -36,13 +36,13 @@ def check_localization(url):
         if localization in url:
             url_without_localization = url.replace(f"/{localization}", "")
             try:
-                response = requests.head(url_without_localization, allow_redirects=True)
+                response = requests.head(url_without_localization, allow_redirects=True,timeout=10)
                 if response.status_code == 200:
                     return (True, f'remove {localization}')
                 elif response.status_code == 301:
                     redirected_url = response.headers.get('Location')
                     try:
-                        response = requests.head(redirected_url, allow_redirects=True)
+                        response = requests.head(redirected_url, allow_redirects=True,timeout=10)
                         if response.status_code == 200:
                             return (True, f'remove {localization}')
                     except requests.RequestException as e:
@@ -75,7 +75,7 @@ def check_url(url, curr_row, data):
         return False
     
     try:
-        response = requests.head(url, allow_redirects=True)
+        response = requests.head(url, allow_redirects=True,timeout=10)
         if response.status_code == 200:
             data.at[curr_row, COMMENTS] = CORRECT
             return True
@@ -104,7 +104,7 @@ def process_url(curr_row, address, data):
         positive_count += 1
     else:
         negative_count += 1
-        print(f"Processing of row {curr_row} failed for address: {address}")  # Add your custom message or action here
+        print(f"Processing of row {curr_row} failed for address: {address}") 
 
     return positive_count, negative_count
 
