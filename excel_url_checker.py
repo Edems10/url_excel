@@ -92,15 +92,20 @@ def close_loading_window(loading_window):
     loading_window.destroy()
 
 def display_popup():
-    random_number = random.randint(1, 15)
+    random_number = random.randint(1, 30)
     if random_number == 1:
         messagebox.showinfo("IMPORTANT", "Danielka is awesome <3!")
     elif random_number == 2:
         messagebox.showinfo("IMPORTANT", "If you think about it Danielka is Amazing")
     elif random_number == 3:
         messagebox.showinfo("IMPORTANT", "QTITO<3")
-    elif random_number == 4:
+    elif random_number == 5:
         messagebox.showinfo("IMPORTANT", "!Bestito!")
+    elif random_number == 6:
+        messagebox.showinfo("IMPORTANT", "!SMARTITO")
+    elif random_number == 7:
+        messagebox.showinfo("IMPORTANT", "Amazing personito!")
+
 
 def update_values(event):
     global CORRECT, INCORRECT, ACCESS_FORBIDDEN, CHECK_PDF
