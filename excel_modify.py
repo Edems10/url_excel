@@ -4,7 +4,9 @@ import requests
 import PyPDF2
 from io import BytesIO
 import multiprocessing
-
+import http.cookiejar
+from tkinter import  ttk
+import math
 
 CORRECT = 'leave as is'
 INCORRECT = ''
@@ -15,12 +17,12 @@ COMMENTS = 'DUB comment'
 URL = 'link'
 MICROSOFT_IN_PDF_LINK = 'PDF is Microsoft'
 
-
+cookie_jar = http.cookiejar.CookieJar()
 
 def check_pdf_url(url):
     try:
         with requests.Session() as session:
-            session.cookies.clear()  # Ignore cookies
+            session.cookies = cookie_jar
             response = session.get(url,timeout=10)
             if response.status_code == 200 and 'application/pdf' in response.headers.get('content-type', ''):
                 pdf_content = BytesIO(response.content)
@@ -44,23 +46,24 @@ def check_localization(url):
             url_without_localization = url.replace(f"/{localization}", "")
             print(f'replaced {localization} in url: {url}')
             try:
-                response = requests.head(url_without_localization, allow_redirects=True,timeout=10)
-                if response.status_code == 200:
-                    return (True, f'remove {localization}')
-                elif response.status_code == 301:
-                    redirected_url = response.headers.get('Location')
-                    try:
-                        response = requests.head(redirected_url, allow_redirects=True,timeout=10)
-                        if response.status_code == 200:
-                            return (True, f'remove {localization}')
-                    except requests.exceptions.Timeout:
-                        print('timeout for',url)
-                        return (False, TIMEOUT)
-                    except requests.RequestException as e:
-                        return (False, 'Error')
-                    
-                else:
-                    return False
+                with requests.Session() as session:
+                    session.cookies = cookie_jar
+                    response = session.head(url_without_localization, allow_redirects=True,timeout=10)
+                    if response.status_code == 200:
+                        return (True, f'remove {localization}')
+                    elif response.status_code == 301:
+                        redirected_url = response.headers.get('Location')
+                        try:
+                            response = session.head(redirected_url, allow_redirects=True,timeout=10)
+                            if response.status_code == 200:
+                                return (True, f'remove {localization}')
+                        except requests.exceptions.Timeout:
+                            print('timeout for',url)
+                            return (False, TIMEOUT)
+                        except requests.RequestException as e:
+                            return (False, 'Error') 
+                    else:
+                        return False
             except requests.RequestException as e:
                 return (False, 'Error')
     return (False, 'no localization')
@@ -92,23 +95,25 @@ def check_url(url, curr_row, data):
         return False
     
     try:
-        response = requests.head(url, allow_redirects=True,timeout=10)
-        if response.status_code == 200:
-            data.at[curr_row, COMMENTS] = CORRECT
-            return True
-        elif response.status_code == 301:
-            redirected_url = response.headers.get('Location')
-            check_url(redirected_url, curr_row, data)
-        elif response.status_code == 403:
-            data.at[curr_row, COMMENTS] = ACCESS_FORBIDDEN
-            return False
-        elif response.status_code == 405:
-            data.at[curr_row, COMMENTS] = ACCESS_FORBIDDEN
-            return False
-        else:
-            print(response.status_code)
-            data.at[curr_row, COMMENTS] = INCORRECT
-            return False
+        with requests.Session() as session:
+            session.cookies = cookie_jar
+            response = session.head(url, allow_redirects=True,timeout=10)
+            if response.status_code == 200:
+                data.at[curr_row, COMMENTS] = CORRECT
+                return True
+            elif response.status_code == 301:
+                redirected_url = response.headers.get('Location')
+                check_url(redirected_url, curr_row, data)
+            elif response.status_code == 403:
+                data.at[curr_row, COMMENTS] = ACCESS_FORBIDDEN
+                return False
+            elif response.status_code == 405:
+                data.at[curr_row, COMMENTS] = ACCESS_FORBIDDEN
+                return False
+            else:
+                print(response.status_code)
+                data.at[curr_row, COMMENTS] = INCORRECT
+                return False
     except requests.exceptions.Timeout:
         print('timeout for',url)
         data.at[curr_row, COMMENTS] = TIMEOUT
@@ -130,7 +135,7 @@ def process_url(curr_row, address, data):
     return positive_count, negative_count
 
 
-def process_excel(file_path,cor,incor,forbiden,pdf,local_types):
+def process_excel(file_path,cor,incor,forbiden,pdf,local_types,progress_bar:ttk.Progressbar):
     
     global CHECK_PDF
     global CORRECT
@@ -147,10 +152,11 @@ def process_excel(file_path,cor,incor,forbiden,pdf,local_types):
     max_cores = multiprocessing.cpu_count()-1
     data = pd.read_excel(FILE_PATH)
     list_addresses = data[URL].tolist()
+    progress_bar_length = len(list_addresses)
     updated_data = data.copy()
     total_positive = 0
     total_negative = 0
-
+    curr_progress = 0
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_cores) as executor:
         future_to_row = {
             executor.submit(process_url, curr_row, address, updated_data): curr_row
@@ -163,6 +169,9 @@ def process_excel(file_path,cor,incor,forbiden,pdf,local_types):
                 positive_count, negative_count = future.result()
                 total_positive += positive_count
                 total_negative += negative_count
+                curr_progress = (curr_row / progress_bar_length) * 100 if (curr_row / progress_bar_length) * 100 > curr_progress else curr_progress
+                progress_bar['value']= curr_progress
+                progress_bar.pack()
                 print(f"Processed row {curr_row} successfully.")
             except Exception as e:
                 print(f"Error processing row {curr_row}: {e}")
