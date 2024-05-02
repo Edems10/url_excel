@@ -76,10 +76,10 @@ def process_data(progress_bar):
 
 def show_loading_window():
     loading_window = tk.Toplevel()
-    loading_window.title("Loading...")
+    loading_window.title("Processing Urls...")
     loading_window.geometry("300x100")
 
-    loading_label = tk.Label(loading_window, text="Please wait while loading...")
+    loading_label = tk.Label(loading_window, text="Please wait while Processing...")
     loading_label.pack(pady=5)
 
     progress_bar = ttk.Progressbar(loading_window, orient="horizontal", length=200, mode="determinate",maximum=100)
