@@ -14,9 +14,11 @@ URL = 'link'
 SLIDE = 'slide'
 FILE_PATH = ""
 CHECK_PDF = True
+LOCALIZATION_TYPES = ['en-us','en-gb','en-in','en-ca','en-au']
 
 
 class Tooltip:
+    
     def __init__(self, widget, text="Information"):
         self.widget = widget
         self.text = text
@@ -38,6 +40,8 @@ class Tooltip:
         label = tk.Label(self.tooltip, text=self.text, background="#FFFFDD", relief="solid", borderwidth=1)
         label.pack()
 
+    
+    
     def on_leave(self, event=None):
         if self.tooltip:
             self.tooltip.destroy()
@@ -55,7 +59,7 @@ def process_data():
     global FILE_PATH
     if FILE_PATH:
         clear_log_text()
-        result = process_excel(FILE_PATH, CORRECT, INCORRECT, ACCESS_FORBIDDEN, CHECK_PDF)
+        result = process_excel(FILE_PATH, CORRECT, INCORRECT, ACCESS_FORBIDDEN, CHECK_PDF,LOCALIZATION_TYPES)
         log_text.insert(tk.END, f"Excel URLs outcome:\n"
                                 f"{result[0]} are working correctly\n"
                                 f"{result[1]} are either not accessible or not working\n"
@@ -75,6 +79,14 @@ def update_values(event):
     ACCESS_FORBIDDEN = forbidden_entry.get()
     CHECK_PDF = pdf_check_var.get()
 
+def update_localization_types(event=None):
+    global LOCALIZATION_TYPES
+    input_text = localization_entry.get().strip()
+    if input_text:
+        LOCALIZATION_TYPES = [item.strip() for item in input_text.split(',')]
+    else:
+        LOCALIZATION_TYPES = []
+
 def update_file_status():
     global FILE_PATH
     if FILE_PATH:
@@ -91,12 +103,13 @@ def main():
     global incorrect_entry
     global correct_entry
     global forbidden_entry
+    global localization_entry
     global pdf_check_var
     global log_text
     
     root = tk.Tk()
     root.title("Excel URL checker")
-    root.geometry("500x400")
+    root.geometry("600x500")  # Adjusted width to give more space
 
     file_status_label = tk.Label(root, text="No file selected", fg="red")
     file_status_label.pack(padx=20, pady=10)
@@ -111,28 +124,33 @@ def main():
     process_button.pack(side=tk.LEFT, padx=10)
 
     settings_frame = tk.Frame(root, padx=20, pady=10)
-    settings_frame.pack()
+    settings_frame.pack(fill=tk.X, expand=True)
 
-    tk.Label(settings_frame, text="Correct:").grid(row=0, column=0)
+    tk.Label(settings_frame, text="Correct:").grid(row=0, column=0, sticky=tk.W)
     correct_entry = tk.Entry(settings_frame)
-    correct_entry.grid(row=0, column=1)
+    correct_entry.grid(row=0, column=1, sticky=tk.EW)
     correct_entry.insert(0, 'leave as is')
 
-    tk.Label(settings_frame, text="Incorrect:").grid(row=1, column=0)
+    tk.Label(settings_frame, text="Incorrect:").grid(row=1, column=0, sticky=tk.W)
     incorrect_entry = tk.Entry(settings_frame)
-    incorrect_entry.grid(row=1, column=1)
+    incorrect_entry.grid(row=1, column=1, sticky=tk.EW)
     incorrect_entry.insert(0, '')
 
-    tk.Label(settings_frame, text="Forbidden:").grid(row=3, column=0)
+    tk.Label(settings_frame, text="Forbidden:").grid(row=2, column=0, sticky=tk.W)
     forbidden_entry = tk.Entry(settings_frame)
-    forbidden_entry.grid(row=3, column=1)
+    forbidden_entry.grid(row=2, column=1, sticky=tk.EW)
     forbidden_entry.insert(0, 'access forbidden')
+
+    tk.Label(settings_frame, text="Localization Types:").grid(row=3, column=0, sticky=tk.W)
+    localization_entry = tk.Entry(settings_frame)
+    localization_entry.grid(row=3, column=1, sticky=tk.EW)
+    localization_entry.insert(0, ','.join(LOCALIZATION_TYPES))
+    localization_entry.bind("<KeyRelease>", update_localization_types)
 
     pdf_check_var = tk.BooleanVar()
     pdf_check_var.set(True)
     pdf_check = tk.Checkbutton(settings_frame, text="Check PDF Files", variable=pdf_check_var)
-    pdf_check.grid(row=4, columnspan=2)
-
+    pdf_check.grid(row=4, column=0, columnspan=2, sticky=tk.W)
 
     log_text = tk.Text(root, height=10, width=60, wrap=tk.WORD)
     log_text.pack(padx=20, pady=(0, 20))
@@ -141,11 +159,14 @@ def main():
     incorrect_entry.bind("<KeyRelease>", update_values)
     forbidden_entry.bind("<KeyRelease>", update_values)
 
+    settings_frame.columnconfigure(1, weight=1)  # This makes the second column expandable
+
     # Tooltip messages for settings
     tooltips = {
         correct_entry: "This will be written if the URL is working correctly",
         incorrect_entry: "This will be written if the URL is not working correctly",
         forbidden_entry: "This will be written if the URL is not accesible due to an authentication issue",
+        localization_entry: "Enter comma-separated localization types (e.g., en-us, en-gb)",
     }
 
     for widget, tooltip_text in tooltips.items():
@@ -155,6 +176,6 @@ def main():
 
     root.mainloop()
 
+
 if __name__ == '__main__':
     main()
-

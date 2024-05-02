@@ -8,25 +8,32 @@ import multiprocessing
 
 CORRECT = 'leave as is'
 INCORRECT = ''
+TIMEOUT = "URL TIMEOUT"
 LOCALIZATION = 'remove en-us'
 ACCESS_FORBIDDEN = 'access fodbidden'
 COMMENTS = 'DUB comment'
 URL = 'link'
+MICROSOFT_IN_PDF_LINK = 'PDF is Microsoft'
 
-LOCALIZATION_TYPES = ['en-us','en-gb','en-in','en-ca','en-au']
 
 
 def check_pdf_url(url):
     try:
-        response = requests.get(url,timeout=10)
-        if response.status_code == 200 and 'application/pdf' in response.headers.get('content-type', ''):
-            pdf_content = BytesIO(response.content)
-            pdf_reader = PyPDF2.PdfReader(pdf_content)
-            num_pages = len(pdf_reader.pages)
-            return True
-        else:
-            return False
+        with requests.Session() as session:
+            session.cookies.clear()  # Ignore cookies
+            response = session.get(url,timeout=10)
+            if response.status_code == 200 and 'application/pdf' in response.headers.get('content-type', ''):
+                pdf_content = BytesIO(response.content)
+                pdf_reader = PyPDF2.PdfReader(pdf_content)
+                num_pages = len(pdf_reader.pages)
+                if 'microsoft' in url:
+                    return 'microsoft'
+                return True
+            else:
+                return False
     except PyPDF2.utils.PdfReadError as e:
+        return False
+    except requests.exceptions.Timeout:
         return False
     except requests.RequestException as e:
         return False
@@ -35,6 +42,7 @@ def check_localization(url):
     for localization in LOCALIZATION_TYPES:
         if localization in url:
             url_without_localization = url.replace(f"/{localization}", "")
+            print(f'replaced {localization} in url: {url}')
             try:
                 response = requests.head(url_without_localization, allow_redirects=True,timeout=10)
                 if response.status_code == 200:
@@ -45,8 +53,12 @@ def check_localization(url):
                         response = requests.head(redirected_url, allow_redirects=True,timeout=10)
                         if response.status_code == 200:
                             return (True, f'remove {localization}')
+                    except requests.exceptions.Timeout:
+                        print('timeout for',url)
+                        return (False, TIMEOUT)
                     except requests.RequestException as e:
                         return (False, 'Error')
+                    
                 else:
                     return False
             except requests.RequestException as e:
@@ -54,13 +66,18 @@ def check_localization(url):
     return (False, 'no localization')
 
 def check_url(url, curr_row, data):
+    
     if url.startswith('mailto'):
         data.at[curr_row, COMMENTS] = CORRECT
         return True
     
     if CHECK_PDF:
         if url.lower().endswith('.pdf'):
-            if check_pdf_url(url):
+            pdf_check_result = check_pdf_url(url)
+            if pdf_check_result == 'microsoft':
+                data.at[curr_row, COMMENTS] = MICROSOFT_IN_PDF_LINK
+                return True
+            elif pdf_check_result:
                 data.at[curr_row, COMMENTS] = CORRECT
                 return True
             else:
@@ -92,6 +109,10 @@ def check_url(url, curr_row, data):
             print(response.status_code)
             data.at[curr_row, COMMENTS] = INCORRECT
             return False
+    except requests.exceptions.Timeout:
+        print('timeout for',url)
+        data.at[curr_row, COMMENTS] = TIMEOUT
+        return False
     except requests.RequestException as e:
         data.at[curr_row, COMMENTS] = INCORRECT
         return False
@@ -109,19 +130,21 @@ def process_url(curr_row, address, data):
     return positive_count, negative_count
 
 
-def process_excel(file_path,cor,incor,forbiden,pdf):
+def process_excel(file_path,cor,incor,forbiden,pdf,local_types):
     
     global CHECK_PDF
     global CORRECT
     global INCORRECT
     global ACCESS_FORBIDDEN
+    global LOCALIZATION_TYPES
     
     FILE_PATH = file_path
     CORRECT =cor
     INCORRECT = incor
     ACCESS_FORBIDDEN = forbiden
     CHECK_PDF =pdf
-    max_cores = multiprocessing.cpu_count()
+    LOCALIZATION_TYPES = local_types
+    max_cores = multiprocessing.cpu_count()-1
     data = pd.read_excel(FILE_PATH)
     list_addresses = data[URL].tolist()
     updated_data = data.copy()
